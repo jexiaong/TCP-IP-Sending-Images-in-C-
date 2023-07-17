@@ -4,7 +4,6 @@
 #include <ws2tcpip.h>
 #include <opencv2/opencv.hpp>
 #include <filesystem>
-#include <windows.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
