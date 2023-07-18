@@ -8,7 +8,7 @@
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
-        std::cerr << "Usage: sender <image_file_path>" << std::endl;
+        std::cerr << "Usage: sender <image_file_path>\n";
         return 1;
     }
 
@@ -18,14 +18,14 @@ int main(int argc, char* argv[]) {
     // Initialize Winsock
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "Failed to initialize Winsock" << std::endl;
+        std::cerr << "Failed to initialize Winsock\n";
         return 1;
     }
 
     // Create socket
     SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (clientSocket == INVALID_SOCKET) {
-        std::cerr << "Failed to create socket" << std::endl;
+        std::cerr << "Failed to create socket\n";
         WSACleanup();
         return 1;
     }
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(54000);
     if (inet_pton(AF_INET, serverIP, &(serverAddress.sin_addr)) != 1) {
-        std::cerr << "Invalid server IP address" << std::endl;
+        std::cerr << "Invalid server IP address\n";
         closesocket(clientSocket);
         WSACleanup();
         return 1;
@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 
     // Connect to the server
     if (connect(clientSocket, reinterpret_cast<SOCKADDR*>(&serverAddress), sizeof(serverAddress)) != 0) {
-        std::cerr << "Failed to connect to the server" << std::endl;
+        std::cerr << "Failed to connect to the server\n";
         closesocket(clientSocket);
         WSACleanup();
         return 1;
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     } while (!inputFile.eof());
     inputFile.close();
     
-    std::cout << "Image sent successfully" << std::endl;
+    std::cout << "Image sent successfully\n";
 
     // Clean up
     closesocket(clientSocket);
