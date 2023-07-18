@@ -10,14 +10,14 @@ int main() {
     // Initialize Winsock
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        std::cerr << "Failed to initialize Winsock" << std::endl;
+        std::cerr << "Failed to initialize Winsock\n";
         return 1;
     }
 
     // Create socket
     SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == INVALID_SOCKET) {
-        std::cerr << "Failed to create socket" << std::endl;
+        std::cerr << "Failed to create socket\n";
         WSACleanup();
         return 1;
     }
@@ -29,7 +29,7 @@ int main() {
     serverAddress.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(serverSocket, reinterpret_cast<SOCKADDR*>(&serverAddress), sizeof(serverAddress)) == SOCKET_ERROR) {
-        std::cerr << "Failed to bind socket" << std::endl;
+        std::cerr << "Failed to bind socket\n";
         closesocket(serverSocket);
         WSACleanup();
         return 1;
@@ -37,26 +37,26 @@ int main() {
 
     // Listen for incoming connections
     if (listen(serverSocket, 1) == SOCKET_ERROR) { // 1 connection, adjust as needed
-        std::cerr << "Failed to listen" << std::endl;
+        std::cerr << "Failed to listen\n";
         closesocket(serverSocket);
         WSACleanup();
         return 1;
     }
-    std::cout << "Server listening for incoming connections..." << std::endl;
+    std::cout << "Server listening for incoming connections...\n";
 
     // Accept a client socket
     struct sockaddr_in clientAddress;
     int clientAddrLen = sizeof(clientAddress);
     SOCKET clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddress, &clientAddrLen);
     if (clientSocket == INVALID_SOCKET) {
-        std::cerr << "Failed to accept client socket" << std::endl;
+        std::cerr << "Failed to accept client socket\n";
         closesocket(serverSocket);
         WSACleanup();
         return 1;
     }
-    std::cout << "Successfully connected" << std::endl;
-    
-   while (true) {
+    std::cout << "Successfully connected\n";
+
+    while (true) {
         // Receive the number of image bytes
         uint32_t imgBytes;
         if (recv(clientSocket, (char*)&imgBytes, sizeof(imgBytes), 0) <= 0) {
@@ -67,7 +67,7 @@ int main() {
             return 1;
         }
         std::cout << "Image bytes: " << imgBytes << std::endl;
-        
+
         // Receive the image data 
         const int bufferSize = 8192; // Adjust buffer size as needed
         char buffer[bufferSize];
@@ -85,7 +85,7 @@ int main() {
             n++;
         }
         outputFile.close();
-        
+
         //Load and display the received image using OpenCV
         cv::Mat receivedImage = cv::imread("received_image.jpg");
         cv::imshow("Received Image", receivedImage);
