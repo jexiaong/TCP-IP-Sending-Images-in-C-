@@ -5,6 +5,8 @@ C++ Windows compiler version of a TCP/IP Protocol for sending and displaying ima
 [indiv-imgs](/indiv-imgs): sends and displays a singular image
 
 # Usage
+- Fill in the IP Address of the receiving PC in sender.cpp
+- Adjust the number of connections in receiver.cpp if applicable (current code only allows 1 connection)
 - Run receiver.cpp on the pc receiving/displaying the images first, then run sender.cpp on the pc sending
 - sender.cpp takes the path to the image or folder of images as a commandline argument.
 
