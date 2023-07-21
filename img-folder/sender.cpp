@@ -4,16 +4,55 @@
 #include <ws2tcpip.h>
 #include <opencv2/opencv.hpp>
 #include <filesystem>
+#include <vector>
+#include <thread>
+#include <chrono>
 
 #pragma comment(lib, "ws2_32.lib")
 
-int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: sender <image_folder_path>\n";
+bool numericSort(const std::filesystem::directory_entry& a, const std::filesystem::directory_entry& b) {
+    std::string fileA = a.path().filename().string();
+    std::string fileB = b.path().filename().string();
+
+    //Remove non-digit characters from filename
+    fileA.erase(std::remove_if(fileA.begin(), fileA.end(), [](char c) {
+        return !std::isdigit(c);
+    }), fileA.end());
+    fileB.erase(std::remove_if(fileB.begin(), fileB.end(), [](char c) {
+        return !std::isdigit(c);
+    }), fileB.end());
+
+    return std::stoi(fileA) < std::stoi(fileB);
+}
+
+uint32_t countsortFiles(const std::string &folderPath, std::vector<std::filesystem::directory_entry> &files) {
+    if (!std::filesystem::is_directory(folderPath)) {
+        std::cout << "Invalid folder path." << std::endl;
         return 1;
     }
 
-    std::string folderpath = argv[1];
+    int fileCount = 0;
+    for (const auto& entry : std::filesystem::directory_iterator(folderPath)) {
+        if (entry.is_regular_file()) {
+            ++fileCount;
+        }
+
+        files.push_back(entry);
+    }
+    
+    std::sort(files.begin(), files.end(), numericSort);
+
+    return fileCount;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        std::cerr << "Usage: sender <image_folder_path> <frequency_in_milliseconds>\n";
+        return 1;
+    }
+
+    std::string folderPath = argv[1];
+    uint32_t freq = std::stoi(argv[2]);
     const char* serverIP = "10.28.0.62"; // Replace with the actual IP address
 
     // Initialize Winsock
@@ -49,11 +88,29 @@ int main(int argc, char* argv[]) {
         WSACleanup();
         return 1;
     }
+
+    // Send frequency
+    if (send(clientSocket, (char*)&freq, sizeof(freq), 0) == SOCKET_ERROR) {
+        std::cerr << "Failed to send number of files\n";
+        closesocket(clientSocket);
+        WSACleanup();
+        return 1;
+    }    
+
+    // Send total number of items and sort the folder
+    std::vector<std::filesystem::directory_entry> files;
+    uint32_t num = countsortFiles(folderPath, files);
+    std::cout << num << std::endl;
+    if (send(clientSocket, (char*)&num, sizeof(num), 0) == SOCKET_ERROR) {
+        std::cerr << "Failed to send number of files\n";
+        closesocket(clientSocket);
+        WSACleanup();
+        return 1;
+    }
     
     // Iterate over images in the folder
-    for (const auto& entry : std::filesystem::directory_iterator(folderpath)) {
-
-        const std::string& imagePath = entry.path().string();
+    for (const auto& entry : files) {
+        std::string imagePath = entry.path().string();
 
         // Read the image file
         std::ifstream file(imagePath, std::ios::binary | std::ios::ate);
@@ -66,7 +123,7 @@ int main(int argc, char* argv[]) {
 
         //Get the number of bytes of the image
         uint32_t bytes = static_cast<uint32_t>(file.tellg());
-        std::cout << bytes << std::endl;
+        std::cout << "Image bytes: " << bytes << std::endl;
         if (send(clientSocket, (char*)&bytes, sizeof(bytes), 0) == SOCKET_ERROR) {
             std::cerr << "Failed to send bytes\n";
             closesocket(clientSocket);
@@ -75,20 +132,17 @@ int main(int argc, char* argv[]) {
         }
 
         // Load and send the image to the server
-        std::ifstream inputFile(imagePath, std::ios::binary);
-        char buffer[8192];
-        do {
-            inputFile.read(buffer, sizeof(buffer));
-            int bytesRead = inputFile.gcount();
+        char buffer[65535]; //8192
+        file.seekg(0, std::ios::beg); // Move the file pointer to the beginning
+        while (!file.eof()) {
+            file.read(buffer, sizeof(buffer));
+            int bytesRead = file.gcount();
             if (bytesRead > 0) {
                 send(clientSocket, buffer, bytesRead, 0);
             }
-        } while (!inputFile.eof());
-        inputFile.close();
-
+        }
+        file.close(); // Close the file after sending
         std::cout << "Image sent successfully: " << imagePath << std::endl;
-        
-        Sleep(10000);
     }
 
     // Clean up
