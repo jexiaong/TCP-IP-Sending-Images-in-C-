@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
 
     // Send frequency
     if (send(clientSocket, (char*)&freq, sizeof(freq), 0) == SOCKET_ERROR) {
-        std::cerr << "Failed to send number of files\n";
+        std::cerr << "Failed to send frequency\n";
         closesocket(clientSocket);
         WSACleanup();
         return 1;
